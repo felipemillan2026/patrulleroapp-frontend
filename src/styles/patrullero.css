@@ -257,3 +257,130 @@
   height: 100%;
   object-fit: cover;
 }
+
+.patrullero-nav {
+  background: white;
+  border-bottom: 2px solid #e5e7eb;
+  display: flex;
+  padding: 0 32px;
+  gap: 0;
+}
+
+.patrullero-nav-btn {
+  padding: 14px 24px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.patrullero-nav-btn:hover { color: #1a2b4a; }
+
+.patrullero-nav-btn.activo {
+  color: #1a2b4a;
+  border-bottom-color: #1a2b4a;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-row-acciones {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-bottom: 4px;
+}
+
+.toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toggle-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.toggle-desc {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.toggle-switch {
+  width: 52px;
+  height: 28px;
+  background: #d1d5db;
+  border-radius: 14px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle-switch.activo { background: #1a2b4a; }
+
+.toggle-thumb {
+  width: 22px;
+  height: 22px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: left 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-switch.activo .toggle-thumb { left: 27px; }
+
+.solicitud-original {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.btn-edit-sol {
+  background: #eef2ff;
+  color: #1a2b4a;
+  border: 1px solid #c7d2fe;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-edit-sol:hover { background: #c7d2fe; }
+
+@media (max-width: 600px) {
+  .form-row { grid-template-columns: 1fr; }
+  .patrullero-nav { padding: 0 16px; }
+}
