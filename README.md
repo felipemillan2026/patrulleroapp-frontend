@@ -1,28 +1,37 @@
 # PatrulleroApp — Frontend
 
-Aplicación web responsive desarrollada con React + Vite para la gestión de procedimientos municipales en terreno.
+Aplicación web progressive (PWA-ready) para la gestión digitalizada de procedimientos operativos municipales en terreno.
 
 ## Stack tecnológico
-- React 19 + Vite
-- React Router DOM (navegación SPA)
-- Axios (peticiones HTTP)
-- CSS propio responsive (sin frameworks)
-- Cloudinary (almacenamiento de imágenes de evidencia)
 
-## Requisitos previos
+| Componente | Tecnología |
+|---|---|
+| Framework | React 19 + Vite |
+| Routing | React Router DOM |
+| HTTP Client | Axios |
+| Estilos | CSS propio (sin frameworks) |
+| Imágenes | Cloudinary (upload directo desde navegador) |
+| Mapas | Google Maps Embed API |
+
+## Perfiles de usuario
+
+| Perfil | Funcionalidades |
+|---|---|
+| **Supervisor** | Gestión de turnos (abrir/cerrar), CRUD de usuarios, descarga de reportes PDF |
+| **Centralista** | Monitoreo en tiempo real, cambio de estado de solicitudes, refresco cada 30 seg |
+| **Patrullero** | Registro de procedimientos, geolocalización GPS, carga de imágenes (máx. 10), notificación por email |
+
+## Requisitos
+
 - Node.js 18+
-- Backend PatrulleroApp corriendo en puerto 8080
+- Backend PatrulleroApp corriendo
 
 ## Instalación
+
 ```bash
 npm install
 ```
 
-## Levantar en desarrollo
-```bash
-npm run dev
-```
-La app inicia en `http://localhost:5173`
-
 ## Variables de entorno
-Crea un archivo `.env` en la raíz:
+
+Crea un archivo `.env` en la raíz del proyecto:
