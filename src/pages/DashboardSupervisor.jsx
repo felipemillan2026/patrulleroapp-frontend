@@ -81,22 +81,23 @@ function DashboardSupervisor() {
   const descargarReporte = async (idTurno) => {
     try {
       const token = localStorage.getItem('token')
+      const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
       const res = await fetch(
-        `http://localhost:8080/api/turnos/${idTurno}/reporte`,
+        `${BASE_URL}/turnos/${idTurno}/reporte`,
         { headers: { Authorization: `Bearer ${token}` } }
-      )
-      if (!res.ok) throw new Error('Error al descargar')
-      const blob = await res.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `reporte_turno_${idTurno}.pdf`
-      a.click()
-      window.URL.revokeObjectURL(url)
-    } catch {
-      setMensaje('Error al descargar el reporte')
-    }
+    )
+    if (!res.ok) throw new Error('Error al descargar')
+     const blob = await res.blob()
+     const url = window.URL.createObjectURL(blob)
+     const a = document.createElement('a')
+     a.href = url
+     a.download = `reporte_turno_${idTurno}.pdf`
+     a.click()
+     window.URL.revokeObjectURL(url)
+  }  catch {
+     setMensaje('Error al descargar el reporte')
   }
+}
 
   const abrirModalNuevo = () => {
     setUsuarioEditando(null)
