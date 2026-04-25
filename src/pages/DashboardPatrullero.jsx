@@ -3,6 +3,7 @@ import api from '../services/api'
 import { subirMultiplesImagenes } from '../services/cloudinary'
 import '../styles/dashboard.css'
 import '../styles/patrullero.css'
+import MiPerfil from './MiPerfil'
 
 function DashboardPatrullero() {
   const nombre = localStorage.getItem('nombre')
@@ -18,6 +19,7 @@ function DashboardPatrullero() {
   const [previews, setPreviews] = useState([])
   const [vistaActiva, setVistaActiva] = useState('solicitudes')
   const [solicitudEditando, setSolicitudEditando] = useState(null)
+  const [verPerfil, setVerPerfil] = useState(false)
 
   const [form, setForm] = useState({
     descripcion: '',
@@ -222,6 +224,7 @@ function DashboardPatrullero() {
   }
 
   if (cargando) return <div className="cargando">Cargando...</div>
+  if (verPerfil) return <MiPerfil onVolver={() => setVerPerfil(false)} />
 
   return (
     <div className="dashboard-container">
@@ -235,6 +238,9 @@ function DashboardPatrullero() {
         </div>
         <div className="header-right">
           <span className="header-usuario">👮 {nombre} {apellido}</span>
+          <button className="btn-perfil" onClick={() => setVerPerfil(true)}>
+            👤 Mi perfil
+          </button>
           <button className="btn-cerrar-sesion" onClick={cerrarSesion}>
             Cerrar sesión
           </button>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import '../styles/dashboard.css'
 import '../styles/supervisor.css'
+import MiPerfil from './MiPerfil'
 
 function DashboardSupervisor() {
   const nombre = localStorage.getItem('nombre')
@@ -16,6 +17,7 @@ function DashboardSupervisor() {
   const [cargando, setCargando] = useState(true)
   const [mensaje, setMensaje] = useState('')
   const [seccion, setSeccion] = useState('turno')
+  const [verPerfil, setVerPerfil] = useState(false)
 
   const [mostrarModal, setMostrarModal] = useState(false)
   const [usuarioEditando, setUsuarioEditando] = useState(null)
@@ -148,6 +150,7 @@ function DashboardSupervisor() {
   }
 
   if (cargando) return <div className="cargando">Cargando...</div>
+  if (verPerfil) return <MiPerfil onVolver={() => setVerPerfil(false)} />
 
   return (
     <div className="dashboard-container">
@@ -161,6 +164,9 @@ function DashboardSupervisor() {
         </div>
         <div className="header-right">
           <span className="header-usuario">👤 {nombre} {apellido}</span>
+          <button className="btn-perfil" onClick={() => setVerPerfil(true)}>
+            👤 Mi perfil
+          </button>
           <button className="btn-cerrar-sesion" onClick={cerrarSesion}>
             Cerrar sesión
           </button>

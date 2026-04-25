@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import '../styles/dashboard.css'
 import '../styles/centralista.css'
+import MiPerfil from './MiPerfil'
 
 function DashboardCentralista() {
   const nombre = localStorage.getItem('nombre')
@@ -15,6 +16,7 @@ function DashboardCentralista() {
   const [solicitudEditando, setSolicitudEditando] = useState(null)
   const [patrullerosActivos, setPatrullerosActivos] = useState([])
   const [tiposCasoEdicion, setTiposCasoEdicion] = useState([])
+  const [verPerfil, setVerPerfil] = useState(false)
 
   const [formEdicion, setFormEdicion] = useState({
     descripcion: '',
@@ -123,6 +125,7 @@ function DashboardCentralista() {
     window.location.href = '/login'
   }
 
+
   const solicitudesFiltradas = filtro === 'todos'
     ? solicitudes
     : solicitudes.filter(s => s.estado === filtro)
@@ -136,6 +139,7 @@ function DashboardCentralista() {
   })[estado] || 'badge-pendiente'
 
   if (cargando) return <div className="cargando">Cargando...</div>
+  if (verPerfil) return <MiPerfil onVolver={() => setVerPerfil(false)} />
 
   return (
     <div className="dashboard-container">
@@ -149,6 +153,9 @@ function DashboardCentralista() {
         </div>
         <div className="header-right">
           <span className="header-usuario">🎧 {nombre} {apellido}</span>
+          <button className="btn-perfil" onClick={() => setVerPerfil(true)}>
+            👤 Mi perfil
+          </button>
           <button className="btn-cerrar-sesion" onClick={cerrarSesion}>
             Cerrar sesión
           </button>
