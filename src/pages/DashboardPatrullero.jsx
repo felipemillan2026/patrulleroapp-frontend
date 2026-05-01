@@ -29,8 +29,6 @@ function DashboardPatrullero() {
     latitud: '',
     longitud: '',
     imagenes: [],
-    notificarEmail: false,
-    emailDestino: ''
   })
 
   const [formEdicion, setFormEdicion] = useState({
@@ -142,18 +140,14 @@ function DashboardPatrullero() {
         latitud: form.latitud ? parseFloat(form.latitud) : null,
         longitud: form.longitud ? parseFloat(form.longitud) : null,
         urlsImagenes,
-        notificarEmail: form.notificarEmail,
-        emailDestino: form.emailDestino || ''
       })
 
-      setMensaje(form.notificarEmail
-        ? `Solicitud creada y email enviado ${form.emailDestino ? 'a ' + form.emailDestino : 'al departamento'} ✓`
-        : 'Solicitud creada correctamente ✓')
+      // El correo se envía automáticamente en el backend al departamento responsable
+      setMensaje('Solicitud creada correctamente ✓ — El departamento fue notificado por correo')
 
       setForm({
         descripcion: '', idDepartamento: '', idTiposCaso: [],
         direccion: '', latitud: '', longitud: '', imagenes: [],
-        notificarEmail: false, emailDestino: ''
       })
       setPreviews([])
       setTiposCaso([])
@@ -194,8 +188,6 @@ function DashboardPatrullero() {
         direccion: formEdicion.direccion,
         idTiposCaso: formEdicion.idTiposCaso,
         urlsImagenes,
-        notificarEmail: false,
-        emailDestino: ''
       })
 
       setMensaje('Solicitud actualizada correctamente ✓')
@@ -214,14 +206,11 @@ function DashboardPatrullero() {
     window.location.href = '/login'
   }
 
-  const getEstadoBadge = (estado) => {
-    const estilos = {
-      pendiente: 'badge-pendiente',
-      en_proceso: 'badge-proceso',
-      cerrada: 'badge-cerrada'
-    }
-    return estilos[estado] || 'badge-pendiente'
-  }
+  const getEstadoBadge = (estado) => ({
+    pendiente: 'badge-pendiente',
+    en_proceso: 'badge-proceso',
+    cerrada: 'badge-cerrada'
+  })[estado] || 'badge-pendiente'
 
   if (cargando) return <div className="cargando">Cargando...</div>
   if (verPerfil) return <MiPerfil onVolver={() => setVerPerfil(false)} />
@@ -283,6 +272,10 @@ function DashboardPatrullero() {
         {vistaActiva === 'nueva' && turnoActivo && (
           <section className="card">
             <h2>Nueva Solicitud de Procedimiento</h2>
+            <p style={{ fontSize: '13px', color: '#059669', marginBottom: '16px', fontWeight: 600 }}>
+              📧 El departamento responsable recibirá un correo automático al registrar la solicitud.
+            </p>
+
             <form onSubmit={handleSubmit} className="solicitud-form">
 
               <div className="form-group">
@@ -362,7 +355,7 @@ function DashboardPatrullero() {
                 )}
               </div>
 
-              {/* Mapa preview nueva solicitud */}
+              {/* Mapa preview */}
               {form.latitud && form.longitud && (
                 <div className="mapa-preview">
                   <label>📍 Vista previa de ubicación</label>
@@ -375,40 +368,6 @@ function DashboardPatrullero() {
                     allowFullScreen
                     src={`https://maps.google.com/maps?q=${form.latitud},${form.longitud}&z=16&output=embed`}
                   />
-                </div>
-              )}
-
-              {/* Toggle email */}
-              <div className="toggle-row">
-                <div className="toggle-info">
-                  <span className="toggle-label">📧 Notificar al departamento por email</span>
-                  <span className="toggle-desc">
-                    Se enviará un email con los datos del procedimiento
-                  </span>
-                </div>
-                <div
-                  className={`toggle-switch ${form.notificarEmail ? 'activo' : ''}`}
-                  onClick={() => setForm(p => ({ ...p, notificarEmail: !p.notificarEmail }))}
-                >
-                  <div className="toggle-thumb" />
-                </div>
-              </div>
-
-              {/* Campo email destino */}
-              {form.notificarEmail && (
-                <div className="email-destino-box">
-                  <label>Correo de destino</label>
-                  <div className="email-destino-row">
-                    <input
-                      type="email"
-                      value={form.emailDestino}
-                      onChange={e => setForm(p => ({ ...p, emailDestino: e.target.value }))}
-                      placeholder="correo@destino.cl"
-                    />
-                    <span className="email-hint">
-                      Déjalo vacío para enviar al correo del departamento
-                    </span>
-                  </div>
                 </div>
               )}
 
@@ -433,10 +392,7 @@ function DashboardPatrullero() {
               <p><strong>Departamento:</strong> {solicitudEditando.departamentoNombre}</p>
               <p>
                 <strong>Estado actual:</strong>
-                <span
-                  className={`badge ${getEstadoBadge(solicitudEditando.estado)}`}
-                  style={{ marginLeft: '8px' }}
-                >
+                <span className={`badge ${getEstadoBadge(solicitudEditando.estado)}`} style={{ marginLeft: '8px' }}>
                   {solicitudEditando.estado.replace('_', ' ').toUpperCase()}
                 </span>
               </p>
@@ -502,9 +458,7 @@ function DashboardPatrullero() {
                   onChange={handleImagenesEdicion} className="input-file"
                 />
                 {formEdicion.imagenes.length > 0 && (
-                  <p className="ubicacion-ok">
-                    ✓ {formEdicion.imagenes.length} imagen(es) seleccionada(s)
-                  </p>
+                  <p className="ubicacion-ok">✓ {formEdicion.imagenes.length} imagen(es) seleccionada(s)</p>
                 )}
               </div>
 
@@ -551,7 +505,6 @@ function DashboardPatrullero() {
                         ))}
                       </div>
                     )}
-                    {/* Miniaturas de imágenes */}
                     {s.urlsImagenes?.length > 0 && (
                       <div className="imagenes-mini">
                         {s.urlsImagenes.map((url, i) => (
@@ -559,9 +512,7 @@ function DashboardPatrullero() {
                             <img src={url} alt={`img-${i}`} className="imagen-mini" />
                           </a>
                         ))}
-                        <span className="imagenes-count">
-                          📷 {s.urlsImagenes.length} imagen(es)
-                        </span>
+                        <span className="imagenes-count">📷 {s.urlsImagenes.length} imagen(es)</span>
                       </div>
                     )}
                   </div>
