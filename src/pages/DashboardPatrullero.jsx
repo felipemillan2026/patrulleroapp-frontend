@@ -48,7 +48,7 @@ function DashboardPatrullero() {
     } catch { setTurnoActivo(null) }
     try {
       const solRes = await api.get('/solicitudes/mis-solicitudes')
-      setSolicitudes(solRes.data)
+      setSolicitudes([...solRes.data].sort((a, b) => new Date(b.fechaHora) - new Date(a.fechaHora)))
     } catch { setSolicitudes([]) }
     try {
       const deptRes = await api.get('/departamentos')
