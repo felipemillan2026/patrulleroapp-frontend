@@ -4,6 +4,7 @@ import { subirMultiplesImagenes } from '../services/cloudinary'
 import '../styles/dashboard.css'
 import '../styles/patrullero.css'
 import MiPerfil from './MiPerfil'
+import PatrullaIcon from '../components/PatrullaIcon'
 
 function DashboardPatrullero() {
   const nombre = localStorage.getItem('nombre')
@@ -48,7 +49,7 @@ function DashboardPatrullero() {
     } catch { setTurnoActivo(null) }
     try {
       const solRes = await api.get('/solicitudes/mis-solicitudes')
-      setSolicitudes([...solRes.data].sort((a, b) => new Date(b.fechaHora) - new Date(a.fechaHora)))
+      setSolicitudes(solRes.data)
     } catch { setSolicitudes([]) }
     try {
       const deptRes = await api.get('/departamentos')
@@ -219,7 +220,7 @@ function DashboardPatrullero() {
     <div className="dashboard-container">
       <header className="dashboard-header">
         <div className="header-left">
-          <span className="header-logo">🛡️</span>
+          <span className="header-logo"><PatrullaIcon size={36} /></span>
           <div>
             <h1>PatrulleroApp</h1>
             <p>Panel Patrullero</p>
