@@ -3,7 +3,6 @@ import api from '../services/api'
 import '../styles/dashboard.css'
 import '../styles/supervisor.css'
 import MiPerfil from './MiPerfil'
-import PatrullaIcon from '../components/PatrullaIcon'
 
 function DashboardSupervisor() {
   const nombre = localStorage.getItem('nombre')
@@ -19,6 +18,10 @@ function DashboardSupervisor() {
   const [mensaje, setMensaje] = useState('')
   const [seccion, setSeccion] = useState('turno')
   const [verPerfil, setVerPerfil] = useState(false)
+
+  // Estados para consulta de solicitudes por turno histórico
+  const [solicitudesTurno, setSolicitudesTurno] = useState([])
+  const [turnoConsultado, setTurnoConsultado] = useState(null)
 
   const [mostrarModal, setMostrarModal] = useState(false)
   const [usuarioEditando, setUsuarioEditando] = useState(null)
@@ -102,6 +105,20 @@ function DashboardSupervisor() {
     }
   }
 
+  // Consulta las solicitudes de un turno cerrado para revisión histórica
+  const verSolicitudesTurno = async (idTurno, tipo, fechaInicio) => {
+    try {
+      const res = await api.get(`/solicitudes/turno/${idTurno}`)
+      setSolicitudesTurno(
+        [...res.data].sort((a, b) => new Date(b.fechaHora) - new Date(a.fechaHora))
+      )
+      setTurnoConsultado({ idTurno, tipo, fechaInicio })
+      setSeccion('solicitudes-historial')
+    } catch {
+      setMensaje('Error al cargar solicitudes del turno')
+    }
+  }
+
   const abrirModalNuevo = () => {
     setUsuarioEditando(null)
     setFormUsuario({ nombre: '', apellido: '', email: '', password: '', idRol: 3 })
@@ -145,6 +162,12 @@ function DashboardSupervisor() {
     window.location.href = '/login'
   }
 
+  const getEstadoBadge = (estado) => ({
+    pendiente: 'badge-pendiente',
+    en_proceso: 'badge-proceso',
+    cerrada: 'badge-cerrada'
+  })[estado] || 'badge-pendiente'
+
   if (cargando) return <div className="cargando">Cargando...</div>
   if (verPerfil) return <MiPerfil onVolver={() => setVerPerfil(false)} />
 
@@ -152,7 +175,7 @@ function DashboardSupervisor() {
     <div className="dashboard-container">
       <header className="dashboard-header">
         <div className="header-left">
-          <span className="header-logo"><PatrullaIcon size={36} /></span>
+          <span className="header-logo">🛡️</span>
           <div>
             <h1>PatrulleroApp</h1>
             <p>Panel Supervisor</p>
@@ -170,13 +193,16 @@ function DashboardSupervisor() {
       </header>
 
       <nav className="supervisor-nav">
-        <button className={`nav-btn ${seccion === 'turno' ? 'activo' : ''}`} onClick={() => setSeccion('turno')}>
+        <button className={`nav-btn ${seccion === 'turno' ? 'activo' : ''}`}
+          onClick={() => setSeccion('turno')}>
           🕐 Gestión de Turno
         </button>
-        <button className={`nav-btn ${seccion === 'historial' ? 'activo' : ''}`} onClick={() => setSeccion('historial')}>
+        <button className={`nav-btn ${seccion === 'historial' || seccion === 'solicitudes-historial' ? 'activo' : ''}`}
+          onClick={() => setSeccion('historial')}>
           📋 Historial de Turnos
         </button>
-        <button className={`nav-btn ${seccion === 'usuarios' ? 'activo' : ''}`} onClick={() => setSeccion('usuarios')}>
+        <button className={`nav-btn ${seccion === 'usuarios' ? 'activo' : ''}`}
+          onClick={() => setSeccion('usuarios')}>
           👥 Gestión de Usuarios
         </button>
       </nav>
@@ -186,7 +212,7 @@ function DashboardSupervisor() {
           <div className="mensaje-info" onClick={() => setMensaje('')}>{mensaje} ✕</div>
         )}
 
-        {/* SECCIÓN TURNO */}
+        {/* ── TURNO ── */}
         {seccion === 'turno' && (
           <section className="card">
             <h2>Estado del Turno</h2>
@@ -224,11 +250,9 @@ function DashboardSupervisor() {
                     {patrulleros.length === 0
                       ? <p className="sin-datos">No hay patrulleros activos</p>
                       : patrulleros.map(p => (
-                        <div
-                          key={p.idUsuario}
+                        <div key={p.idUsuario}
                           className={`patrullero-item ${seleccionados.includes(p.idUsuario) ? 'seleccionado' : ''}`}
-                          onClick={() => togglePatrullero(p.idUsuario)}
-                        >
+                          onClick={() => togglePatrullero(p.idUsuario)}>
                           👮 {p.nombre} {p.apellido}
                           {seleccionados.includes(p.idUsuario) && <span> ✓</span>}
                         </div>
@@ -242,7 +266,7 @@ function DashboardSupervisor() {
           </section>
         )}
 
-        {/* SECCIÓN HISTORIAL */}
+        {/* ── HISTORIAL DE TURNOS ── */}
         {seccion === 'historial' && (
           <section className="card">
             <h2>Historial de Turnos ({historial.length})</h2>
@@ -253,26 +277,36 @@ function DashboardSupervisor() {
                 {historial.map(t => (
                   <div key={t.idTurno} className="historial-item">
                     <div className="historial-item-info">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'6px' }}>
                         <span className="id-badge">#{t.idTurno}</span>
-                        <span style={{ fontWeight: 700, color: '#1a2b4a', fontSize: '15px' }}>
+                        <span style={{ fontWeight:700, color:'#1a2b4a', fontSize:'15px' }}>
                           Turno {t.tipo.toUpperCase()}
                         </span>
                         <span className="badge badge-cerrada">CERRADO</span>
                       </div>
-                      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '13px', color: '#6b7280' }}>
+                      <div style={{ display:'flex', gap:'20px', flexWrap:'wrap', fontSize:'13px', color:'#6b7280' }}>
                         <span>🕐 Inicio: {new Date(t.fechaInicio).toLocaleString('es-CL')}</span>
                         <span>🔒 Cierre: {new Date(t.fechaCierre).toLocaleString('es-CL')}</span>
                         <span>👤 {t.supervisorNombre}</span>
                       </div>
                     </div>
-                    <button
-                      className="btn-primary"
-                      style={{ width: 'auto', padding: '8px 18px', fontSize: '13px', whiteSpace: 'nowrap' }}
-                      onClick={() => descargarReporte(t.idTurno)}
-                    >
-                      📄 Reporte PDF
-                    </button>
+                    <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
+                      <button
+                        className="btn-primary"
+                        style={{ width:'auto', padding:'8px 16px', fontSize:'13px', whiteSpace:'nowrap' }}
+                        onClick={() => descargarReporte(t.idTurno)}
+                      >
+                        📄 Reporte PDF
+                      </button>
+                      <button
+                        className="btn-primary"
+                        style={{ width:'auto', padding:'8px 16px', fontSize:'13px',
+                          whiteSpace:'nowrap', background:'#2E7FC1' }}
+                        onClick={() => verSolicitudesTurno(t.idTurno, t.tipo, t.fechaInicio)}
+                      >
+                        🔍 Ver solicitudes
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -280,7 +314,77 @@ function DashboardSupervisor() {
           </section>
         )}
 
-        {/* SECCIÓN USUARIOS */}
+        {/* ── SOLICITUDES DE TURNO HISTÓRICO ── */}
+        {seccion === 'solicitudes-historial' && turnoConsultado && (
+          <section className="card">
+            <div className="seccion-header">
+              <h2>
+                Solicitudes — Turno {turnoConsultado.tipo.toUpperCase()} ·{' '}
+                {new Date(turnoConsultado.fechaInicio).toLocaleDateString('es-CL')}
+              </h2>
+              <button className="btn-secondary" onClick={() => setSeccion('historial')}>
+                ← Volver
+              </button>
+            </div>
+
+            {solicitudesTurno.length === 0 ? (
+              <p className="sin-datos">No hay solicitudes registradas en este turno.</p>
+            ) : (
+              <>
+                <p style={{ fontSize:'13px', color:'#6b7280', marginBottom:'16px' }}>
+                  {solicitudesTurno.length} procedimiento(s) registrado(s) — ordenados del más reciente al más antiguo
+                </p>
+                <div className="solicitudes-lista">
+                  {solicitudesTurno.map(s => (
+                    <div key={s.idSolicitud} className="solicitud-item">
+                      <div className="solicitud-header">
+                        <span className="solicitud-id">#{s.idSolicitud}</span>
+                        <span className={`badge ${getEstadoBadge(s.estado)}`}>
+                          {s.estado.replace('_', ' ').toUpperCase()}
+                        </span>
+                      </div>
+                      <p className="solicitud-descripcion">{s.descripcion}</p>
+                      <div className="solicitud-meta">
+                        <span>👮 {s.patrulleroNombre}</span>
+                        <span>🏢 {s.departamentoNombre}</span>
+                        <span>🕐 {new Date(s.fechaHora).toLocaleString('es-CL')}</span>
+                        {s.direccion && <span>📍 {s.direccion}</span>}
+                      </div>
+                      {s.tiposCaso?.length > 0 && (
+                        <div className="tipos-tags">
+                          {s.tiposCaso.map((t, i) => (
+                            <span key={i} className="tipo-tag">{t}</span>
+                          ))}
+                        </div>
+                      )}
+                      {s.notas && (
+                        <div style={{ background:'#fef9c3', border:'1px solid #fde68a',
+                          borderRadius:'6px', padding:'8px 12px', fontSize:'13px',
+                          color:'#92400e', marginTop:'8px' }}>
+                          <strong>📝 Notas:</strong> {s.notas}
+                        </div>
+                      )}
+                      {s.urlsImagenes?.length > 0 && (
+                        <div className="imagenes-mini" style={{ marginTop:'8px' }}>
+                          {s.urlsImagenes.map((url, i) => (
+                            <a key={i} href={url} target="_blank" rel="noreferrer">
+                              <img src={url} alt={`img-${i}`} className="imagen-mini" />
+                            </a>
+                          ))}
+                          <span className="imagenes-count">
+                            📷 {s.urlsImagenes.length} imagen(es)
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </section>
+        )}
+
+        {/* ── USUARIOS ── */}
         {seccion === 'usuarios' && (
           <section className="card">
             <div className="seccion-header">
@@ -306,8 +410,7 @@ function DashboardSupervisor() {
                     <button className="btn-edit" onClick={() => abrirModalEditar(u)}>✏️</button>
                     <button
                       className={`btn-toggle ${u.activo ? 'desactivar' : 'activar'}`}
-                      onClick={() => toggleActivo(u.idUsuario)}
-                    >
+                      onClick={() => toggleActivo(u.idUsuario)}>
                       {u.activo ? 'Desactivar' : 'Activar'}
                     </button>
                   </span>
@@ -326,24 +429,28 @@ function DashboardSupervisor() {
             <div className="form-group">
               <label>Nombre</label>
               <input type="text" value={formUsuario.nombre}
-                onChange={e => setFormUsuario(p => ({ ...p, nombre: e.target.value }))} placeholder="Nombre" />
+                onChange={e => setFormUsuario(p => ({ ...p, nombre: e.target.value }))}
+                placeholder="Nombre" />
             </div>
             <div className="form-group">
               <label>Apellido</label>
               <input type="text" value={formUsuario.apellido}
-                onChange={e => setFormUsuario(p => ({ ...p, apellido: e.target.value }))} placeholder="Apellido" />
+                onChange={e => setFormUsuario(p => ({ ...p, apellido: e.target.value }))}
+                placeholder="Apellido" />
             </div>
             {!usuarioEditando && (
               <div className="form-group">
                 <label>Email</label>
                 <input type="email" value={formUsuario.email}
-                  onChange={e => setFormUsuario(p => ({ ...p, email: e.target.value }))} placeholder="correo@municipio.cl" />
+                  onChange={e => setFormUsuario(p => ({ ...p, email: e.target.value }))}
+                  placeholder="correo@municipio.cl" />
               </div>
             )}
             <div className="form-group">
               <label>{usuarioEditando ? 'Nueva contraseña (opcional)' : 'Contraseña'}</label>
               <input type="password" value={formUsuario.password}
-                onChange={e => setFormUsuario(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" />
+                onChange={e => setFormUsuario(p => ({ ...p, password: e.target.value }))}
+                placeholder="••••••••" />
             </div>
             <div className="form-group">
               <label>Rol</label>
