@@ -40,7 +40,7 @@ function DashboardCentralista() {
     } catch { setTurnoActivo(null) }
     try {
       const solRes = await api.get('/solicitudes/turno-activo')
-      setSolicitudes(solRes.data)
+      setSolicitudes([...solRes.data].sort((a, b) => new Date(b.fechaHora) - new Date(a.fechaHora)))
     } catch { setSolicitudes([]) }
     setCargando(false)
   }
