@@ -47,7 +47,7 @@ function DashboardCentralista() {
 
   const cargarPatrullerosActivos = async () => {
     try {
-      const res = await api.get('/turnos/patrulleros-activos')
+      const res = await api.get('/turnos/patrulleros')
       setPatrullerosActivos(res.data)
     } catch { setPatrullerosActivos([]) }
   }
