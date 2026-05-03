@@ -3,6 +3,7 @@ import api from '../services/api'
 import '../styles/dashboard.css'
 import '../styles/supervisor.css'
 import MiPerfil from './MiPerfil'
+import PatrullaIcon from '../components/PatrullaIcon'
 
 function DashboardSupervisor() {
   const nombre = localStorage.getItem('nombre')
@@ -175,7 +176,7 @@ function DashboardSupervisor() {
     <div className="dashboard-container">
       <header className="dashboard-header">
         <div className="header-left">
-          <span className="header-logo">🛡️</span>
+          <span className="header-logo"><PatrullaIcon size={36} /></span>
           <div>
             <h1>PatrulleroApp</h1>
             <p>Panel Supervisor</p>
