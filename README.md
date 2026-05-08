@@ -275,7 +275,7 @@ El servidor REST que consume esta aplicación está en un repositorio separado:
 
 ## Autor
 
-**Felipe** — Proyecto de Título · Analista Programador · IPLACEX
+**Felipe Millán Flores** — Proyecto de Título · Analista Programador · IPLACEX
 
 ## Licencia
 
