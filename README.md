@@ -78,6 +78,7 @@ Antes de comenzar, asegúrate de tener instalado:
 - **Git** — para clonar el repositorio
 - **Backend de PatrulleroApp** corriendo (local en `http://localhost:8080` o desplegado en Railway)
 - Una cuenta gratuita de **Cloudinary** ([registro](https://cloudinary.com/users/register/free)) para almacenamiento de imágenes
+- **Visual Studio Code** (recomendado) con las extensiones *ES7+ React/Redux/React-Native snippets* y *ESLint*
 
 Verifica las versiones:
 
@@ -197,7 +198,6 @@ La vista previa de ubicación GPS se muestra mediante un `<iframe>` que apunta a
 ```
 patrulleroapp-frontend/
 ├── public/
-│   ├── _redirects                # Configuración SPA para Netlify
 │   └── favicon.svg
 ├── src/
 │   ├── main.jsx                  # Punto de entrada (BrowserRouter)
@@ -253,11 +253,17 @@ El frontend está desplegado en **Vercel** y se rebuilds automáticamente con ca
 npm run build
 ```
 
-Esto genera la carpeta `dist/` lista para servir desde cualquier hosting estático (Vercel, Netlify, GitHub Pages, S3, etc).
+Esto genera la carpeta `dist/` lista para servir desde Vercel. El archivo `vercel.json` en la raíz del proyecto contiene la regla de rewrite necesaria para que React Router funcione correctamente con rutas profundas:
 
-### Despliegue alternativo en Netlify
+```json
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
+```
 
-El archivo `public/_redirects` permite el despliegue directo en Netlify sin configuración adicional. La línea `/* /index.html 200` redirige todas las rutas al `index.html` para que React Router maneje la navegación del lado del cliente.
+Esta configuración redirige todas las rutas al `index.html` para que React Router maneje la navegación del lado del cliente, evitando errores 404 al recargar la página en rutas como `/supervisor` o `/centralista`.
 
 ## Repositorio backend
 
