@@ -319,13 +319,6 @@ function DashboardCentralista() {
                       <button className="btn-editar-central" onClick={() => abrirEdicion(s)}>
                         ✏️ Editar
                       </button>
-                      <button
-                        className="btn-editar-central"
-                        style={{ background: '#dbeafe', color: '#1e40af', borderColor: '#93c5fd' }}
-                        onClick={() => descargarReporteSolicitud(s.idSolicitud)}
-                      >
-                        📄 PDF
-                      </button>
                     </div>
                   </div>
                 </div>
