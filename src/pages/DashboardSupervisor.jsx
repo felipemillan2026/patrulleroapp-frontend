@@ -24,6 +24,16 @@ function DashboardSupervisor() {
   const [solicitudesTurno, setSolicitudesTurno] = useState([])
   const [turnoConsultado, setTurnoConsultado] = useState(null)
 
+  // ═══════════════════════════════════════════════════════════════════
+  //   FILTROS DEL HISTORIAL DE SOLICITUDES (RF11)
+  // ═══════════════════════════════════════════════════════════════════
+  const [filtroEstado, setFiltroEstado] = useState('todos')
+  const [filtroPatrullero, setFiltroPatrullero] = useState('todos')
+  const [filtroDepartamento, setFiltroDepartamento] = useState('todos')
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
+  const [departamentosDisponibles, setDepartamentosDisponibles] = useState([])
+
   const [mostrarModal, setMostrarModal] = useState(false)
   const [usuarioEditando, setUsuarioEditando] = useState(null)
   const [formUsuario, setFormUsuario] = useState({
@@ -50,6 +60,10 @@ function DashboardSupervisor() {
       const usuRes = await api.get('/usuarios')
       setUsuarios(usuRes.data)
     } catch { setUsuarios([]) }
+    try {
+      const deptRes = await api.get('/departamentos')
+      setDepartamentosDisponibles(deptRes.data)
+    } catch { setDepartamentosDisponibles([]) }
     setCargando(false)
   }
 
@@ -106,6 +120,29 @@ function DashboardSupervisor() {
     }
   }
 
+  // Descarga del PDF individual de una solicitud (cardinalidad 1:N)
+  const descargarReporteSolicitud = async (idSolicitud) => {
+    try {
+      const token = localStorage.getItem('token')
+      const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+      const res = await fetch(
+        `${BASE_URL}/solicitudes/${idSolicitud}/reporte`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      if (!res.ok) throw new Error('Error al descargar')
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `reporte_solicitud_${idSolicitud}.pdf`
+      a.click()
+      window.URL.revokeObjectURL(url)
+      setMensaje(`PDF de solicitud #${idSolicitud} descargado ✓`)
+    } catch {
+      setMensaje('Error al descargar el reporte de la solicitud')
+    }
+  }
+
   // Consulta las solicitudes de un turno cerrado para revisión histórica
   const verSolicitudesTurno = async (idTurno, tipo, fechaInicio) => {
     try {
@@ -114,11 +151,66 @@ function DashboardSupervisor() {
         [...res.data].sort((a, b) => new Date(b.fechaHora) - new Date(a.fechaHora))
       )
       setTurnoConsultado({ idTurno, tipo, fechaInicio })
+      // Resetear filtros al abrir un nuevo turno
+      setFiltroEstado('todos')
+      setFiltroPatrullero('todos')
+      setFiltroDepartamento('todos')
+      setFiltroFechaDesde('')
+      setFiltroFechaHasta('')
       setSeccion('solicitudes-historial')
     } catch {
       setMensaje('Error al cargar solicitudes del turno')
     }
   }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //   APLICAR FILTROS MULTI-CRITERIO (RF11)
+  //   Filtra el array solicitudesTurno aplicando los 4 criterios:
+  //   estado, patrullero, departamento y rango de fechas.
+  // ═══════════════════════════════════════════════════════════════════
+  const solicitudesFiltradas = solicitudesTurno.filter(s => {
+    // Filtro por estado
+    if (filtroEstado !== 'todos' && s.estado !== filtroEstado) return false
+
+    // Filtro por patrullero (compara por ID)
+    if (filtroPatrullero !== 'todos' && String(s.patrulleroId) !== String(filtroPatrullero)) return false
+
+    // Filtro por departamento (compara por ID)
+    if (filtroDepartamento !== 'todos' && String(s.departamentoId) !== String(filtroDepartamento)) return false
+
+    // Filtro por rango de fechas
+    if (filtroFechaDesde) {
+      const fechaSol = new Date(s.fechaHora)
+      const fechaDesde = new Date(filtroFechaDesde + 'T00:00:00')
+      if (fechaSol < fechaDesde) return false
+    }
+    if (filtroFechaHasta) {
+      const fechaSol = new Date(s.fechaHora)
+      const fechaHasta = new Date(filtroFechaHasta + 'T23:59:59')
+      if (fechaSol > fechaHasta) return false
+    }
+
+    return true
+  })
+
+  // Lista única de patrulleros que aparecen en las solicitudes del turno
+  const patrullerosDelTurno = [...new Map(
+    solicitudesTurno.map(s => [s.patrulleroId, { id: s.patrulleroId, nombre: s.patrulleroNombre }])
+  ).values()]
+
+  const limpiarFiltros = () => {
+    setFiltroEstado('todos')
+    setFiltroPatrullero('todos')
+    setFiltroDepartamento('todos')
+    setFiltroFechaDesde('')
+    setFiltroFechaHasta('')
+  }
+
+  const hayFiltrosActivos = filtroEstado !== 'todos'
+    || filtroPatrullero !== 'todos'
+    || filtroDepartamento !== 'todos'
+    || filtroFechaDesde !== ''
+    || filtroFechaHasta !== ''
 
   const abrirModalNuevo = () => {
     setUsuarioEditando(null)
@@ -315,7 +407,7 @@ function DashboardSupervisor() {
           </section>
         )}
 
-        {/* ── SOLICITUDES DE TURNO HISTÓRICO ── */}
+        {/* ── SOLICITUDES DE TURNO HISTÓRICO CON FILTROS (RF11) ── */}
         {seccion === 'solicitudes-historial' && turnoConsultado && (
           <section className="card">
             <div className="seccion-header">
@@ -332,54 +424,161 @@ function DashboardSupervisor() {
               <p className="sin-datos">No hay solicitudes registradas en este turno.</p>
             ) : (
               <>
-                <p style={{ fontSize:'13px', color:'#6b7280', marginBottom:'16px' }}>
-                  {solicitudesTurno.length} procedimiento(s) registrado(s) — ordenados del más reciente al más antiguo
-                </p>
-                <div className="solicitudes-lista">
-                  {solicitudesTurno.map(s => (
-                    <div key={s.idSolicitud} className="solicitud-item">
-                      <div className="solicitud-header">
-                        <span className="solicitud-id">#{s.idSolicitud}</span>
-                        <span className={`badge ${getEstadoBadge(s.estado)}`}>
-                          {s.estado.replace('_', ' ').toUpperCase()}
-                        </span>
-                      </div>
-                      <p className="solicitud-descripcion">{s.descripcion}</p>
-                      <div className="solicitud-meta">
-                        <span>👮 {s.patrulleroNombre}</span>
-                        <span>🏢 {s.departamentoNombre}</span>
-                        <span>🕐 {new Date(s.fechaHora).toLocaleString('es-CL')}</span>
-                        {s.direccion && <span>📍 {s.direccion}</span>}
-                      </div>
-                      {s.tiposCaso?.length > 0 && (
-                        <div className="tipos-tags">
-                          {s.tiposCaso.map((t, i) => (
-                            <span key={i} className="tipo-tag">{t}</span>
-                          ))}
-                        </div>
-                      )}
-                      {s.notas && (
-                        <div style={{ background:'#fef9c3', border:'1px solid #fde68a',
-                          borderRadius:'6px', padding:'8px 12px', fontSize:'13px',
-                          color:'#92400e', marginTop:'8px' }}>
-                          <strong>📝 Notas:</strong> {s.notas}
-                        </div>
-                      )}
-                      {s.urlsImagenes?.length > 0 && (
-                        <div className="imagenes-mini" style={{ marginTop:'8px' }}>
-                          {s.urlsImagenes.map((url, i) => (
-                            <a key={i} href={url} target="_blank" rel="noreferrer">
-                              <img src={url} alt={`img-${i}`} className="imagen-mini" />
-                            </a>
-                          ))}
-                          <span className="imagenes-count">
-                            📷 {s.urlsImagenes.length} imagen(es)
-                          </span>
-                        </div>
-                      )}
+                {/* ═══════════════════════════════════════════════════ */}
+                {/*  PANEL DE FILTROS MULTI-CRITERIO (RF11)              */}
+                {/* ═══════════════════════════════════════════════════ */}
+                <div className="filtros-panel">
+                  <div className="filtros-header">
+                    <span className="filtros-titulo">🔍 Filtros de búsqueda</span>
+                    {hayFiltrosActivos && (
+                      <button className="btn-limpiar-filtros" onClick={limpiarFiltros}>
+                        ✕ Limpiar filtros
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="filtros-grid">
+                    {/* Filtro por estado */}
+                    <div className="filtro-item">
+                      <label>Estado</label>
+                      <select
+                        value={filtroEstado}
+                        onChange={e => setFiltroEstado(e.target.value)}
+                      >
+                        <option value="todos">Todos los estados</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="en_proceso">En proceso</option>
+                        <option value="cerrada">Cerrada</option>
+                      </select>
                     </div>
-                  ))}
+
+                    {/* Filtro por patrullero */}
+                    <div className="filtro-item">
+                      <label>Patrullero</label>
+                      <select
+                        value={filtroPatrullero}
+                        onChange={e => setFiltroPatrullero(e.target.value)}
+                      >
+                        <option value="todos">Todos los patrulleros</option>
+                        {patrullerosDelTurno.map(p => (
+                          <option key={p.id} value={p.id}>{p.nombre}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Filtro por departamento */}
+                    <div className="filtro-item">
+                      <label>Departamento</label>
+                      <select
+                        value={filtroDepartamento}
+                        onChange={e => setFiltroDepartamento(e.target.value)}
+                      >
+                        <option value="todos">Todos los departamentos</option>
+                        {departamentosDisponibles.map(d => (
+                          <option key={d.idDepartamento} value={d.idDepartamento}>
+                            {d.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Filtro por fecha desde */}
+                    <div className="filtro-item">
+                      <label>Fecha desde</label>
+                      <input
+                        type="date"
+                        value={filtroFechaDesde}
+                        onChange={e => setFiltroFechaDesde(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Filtro por fecha hasta */}
+                    <div className="filtro-item">
+                      <label>Fecha hasta</label>
+                      <input
+                        type="date"
+                        value={filtroFechaHasta}
+                        onChange={e => setFiltroFechaHasta(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Resumen de resultados */}
+                  <div className="filtros-resumen">
+                    {hayFiltrosActivos ? (
+                      <>
+                        <strong>{solicitudesFiltradas.length}</strong> de{' '}
+                        <strong>{solicitudesTurno.length}</strong> solicitudes coinciden con los filtros
+                      </>
+                    ) : (
+                      <>Mostrando todas las solicitudes del turno ({solicitudesTurno.length})</>
+                    )}
+                  </div>
                 </div>
+
+                {/* ═══════════════════════════════════════════════════ */}
+                {/*  LISTA DE SOLICITUDES FILTRADAS                      */}
+                {/* ═══════════════════════════════════════════════════ */}
+                {solicitudesFiltradas.length === 0 ? (
+                  <p className="sin-datos" style={{ marginTop: '20px' }}>
+                    No hay solicitudes que coincidan con los filtros aplicados.
+                  </p>
+                ) : (
+                  <div className="solicitudes-lista">
+                    {solicitudesFiltradas.map(s => (
+                      <div key={s.idSolicitud} className="solicitud-item">
+                        <div className="solicitud-header">
+                          <span className="solicitud-id">#{s.idSolicitud}</span>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <span className={`badge ${getEstadoBadge(s.estado)}`}>
+                              {s.estado.replace('_', ' ').toUpperCase()}
+                            </span>
+                            <button
+                              className="btn-edit-sol"
+                              style={{ background: '#dbeafe', color: '#1e40af', borderColor: '#93c5fd' }}
+                              onClick={() => descargarReporteSolicitud(s.idSolicitud)}
+                            >
+                              📄 PDF
+                            </button>
+                          </div>
+                        </div>
+                        <p className="solicitud-descripcion">{s.descripcion}</p>
+                        <div className="solicitud-meta">
+                          <span>👮 {s.patrulleroNombre}</span>
+                          <span>🏢 {s.departamentoNombre}</span>
+                          <span>🕐 {new Date(s.fechaHora).toLocaleString('es-CL')}</span>
+                          {s.direccion && <span>📍 {s.direccion}</span>}
+                        </div>
+                        {s.tiposCaso?.length > 0 && (
+                          <div className="tipos-tags">
+                            {s.tiposCaso.map((t, i) => (
+                              <span key={i} className="tipo-tag">{t}</span>
+                            ))}
+                          </div>
+                        )}
+                        {s.notas && (
+                          <div style={{ background:'#fef9c3', border:'1px solid #fde68a',
+                            borderRadius:'6px', padding:'8px 12px', fontSize:'13px',
+                            color:'#92400e', marginTop:'8px' }}>
+                            <strong>📝 Notas:</strong> {s.notas}
+                          </div>
+                        )}
+                        {s.urlsImagenes?.length > 0 && (
+                          <div className="imagenes-mini" style={{ marginTop:'8px' }}>
+                            {s.urlsImagenes.map((url, i) => (
+                              <a key={i} href={url} target="_blank" rel="noreferrer">
+                                <img src={url} alt={`img-${i}`} className="imagen-mini" />
+                              </a>
+                            ))}
+                            <span className="imagenes-count">
+                              📷 {s.urlsImagenes.length} imagen(es)
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
           </section>

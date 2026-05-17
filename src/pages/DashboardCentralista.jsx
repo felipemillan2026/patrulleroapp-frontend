@@ -121,6 +121,28 @@ function DashboardCentralista() {
     } catch { setMensaje('Error al actualizar estado') }
   }
 
+  const descargarReporteSolicitud = async (idSolicitud) => {
+    try {
+    const token = localStorage.getItem('token')
+    const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+    const res = await fetch(
+      `${BASE_URL}/solicitudes/${idSolicitud}/reporte`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    if (!res.ok) throw new Error('Error al descargar')
+    const blob = await res.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `reporte_solicitud_${idSolicitud}.pdf`
+    a.click()
+    window.URL.revokeObjectURL(url)
+    setMensaje(`PDF de solicitud #${idSolicitud} descargado correctamente ✓`)
+  } catch {
+    setMensaje('Error al descargar el reporte de la solicitud')
+  }
+}
+
   const cerrarSesion = () => {
     localStorage.clear()
     window.location.href = '/login'
@@ -296,6 +318,13 @@ function DashboardCentralista() {
                       )}
                       <button className="btn-editar-central" onClick={() => abrirEdicion(s)}>
                         ✏️ Editar
+                      </button>
+                      <button
+                        className="btn-editar-central"
+                        style={{ background: '#dbeafe', color: '#1e40af', borderColor: '#93c5fd' }}
+                        onClick={() => descargarReporteSolicitud(s.idSolicitud)}
+                      >
+                        📄 PDF
                       </button>
                     </div>
                   </div>
