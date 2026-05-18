@@ -36,8 +36,11 @@ function DashboardPatrullero() {
     descripcion: '',
     direccion: '',
     idTiposCaso: [],
-    imagenes: []
+    imagenes: [],
   })
+
+  // Previews para el modo edición (igual mecánica que en nueva solicitud)
+  const [previewsEdicion, setPreviewsEdicion] = useState([])
 
   useEffect(() => { cargarDatos() }, [])
 
@@ -80,19 +83,91 @@ function DashboardPatrullero() {
     }))
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  //   SELECCION ACUMULATIVA DE IMAGENES (NUEVA SOLICITUD)
+  //
+  //   Cada vez que el patrullero abre el selector y elige una foto,
+  //   esta se SUMA a las anteriores en lugar de reemplazarlas.
+  //   Permite seleccionar de a una sin necesidad de mantener Ctrl/Shift.
+  //
+  //   Tambien evita duplicados comparando nombre + tamano + lastModified.
+  //   Limite global de 10 imagenes por solicitud.
+  // ═══════════════════════════════════════════════════════════════════
   const handleImagenes = (e) => {
-    const archivos = Array.from(e.target.files)
-    if (archivos.length > 10) {
-      setMensaje('Máximo 10 imágenes por solicitud')
-      return
-    }
-    setForm(prev => ({ ...prev, imagenes: archivos }))
-    setPreviews(archivos.map(f => URL.createObjectURL(f)))
+    const nuevos = Array.from(e.target.files)
+    if (nuevos.length === 0) return
+
+    setForm(prev => {
+      // Evitar duplicados: misma combinacion nombre + tamano + fecha
+      const existentesKeys = new Set(
+        prev.imagenes.map(f => `${f.name}-${f.size}-${f.lastModified}`)
+      )
+      const filtrados = nuevos.filter(
+        f => !existentesKeys.has(`${f.name}-${f.size}-${f.lastModified}`)
+      )
+
+      const combinados = [...prev.imagenes, ...filtrados]
+
+      // Validar limite de 10
+      if (combinados.length > 10) {
+        setMensaje(`Máximo 10 imágenes por solicitud. Tienes ${prev.imagenes.length}, intenta agregar menos.`)
+        return prev
+      }
+
+      // Actualizar previews en paralelo
+      setPreviews(combinados.map(f => URL.createObjectURL(f)))
+      return { ...prev, imagenes: combinados }
+    })
+
+    // Permite re-seleccionar el mismo archivo si el patrullero lo elimino antes
+    e.target.value = ''
   }
 
+  // Quitar una imagen individual antes de enviar
+  const quitarImagen = (indice) => {
+    setForm(prev => {
+      const nuevas = prev.imagenes.filter((_, i) => i !== indice)
+      setPreviews(nuevas.map(f => URL.createObjectURL(f)))
+      return { ...prev, imagenes: nuevas }
+    })
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //   SELECCION ACUMULATIVA DE IMAGENES (EDICION DE SOLICITUD)
+  //   Misma logica para el formulario de edicion
+  // ═══════════════════════════════════════════════════════════════════
   const handleImagenesEdicion = (e) => {
-    const archivos = Array.from(e.target.files)
-    setFormEdicion(prev => ({ ...prev, imagenes: archivos }))
+    const nuevos = Array.from(e.target.files)
+    if (nuevos.length === 0) return
+
+    setFormEdicion(prev => {
+      const existentesKeys = new Set(
+        prev.imagenes.map(f => `${f.name}-${f.size}-${f.lastModified}`)
+      )
+      const filtrados = nuevos.filter(
+        f => !existentesKeys.has(`${f.name}-${f.size}-${f.lastModified}`)
+      )
+
+      const combinados = [...prev.imagenes, ...filtrados]
+
+      if (combinados.length > 10) {
+        setMensaje(`Máximo 10 imágenes nuevas por edición.`)
+        return prev
+      }
+
+      setPreviewsEdicion(combinados.map(f => URL.createObjectURL(f)))
+      return { ...prev, imagenes: combinados }
+    })
+
+    e.target.value = ''
+  }
+
+  const quitarImagenEdicion = (indice) => {
+    setFormEdicion(prev => {
+      const nuevas = prev.imagenes.filter((_, i) => i !== indice)
+      setPreviewsEdicion(nuevas.map(f => URL.createObjectURL(f)))
+      return { ...prev, imagenes: nuevas }
+    })
   }
 
   const obtenerUbicacion = () => {
@@ -143,7 +218,6 @@ function DashboardPatrullero() {
         urlsImagenes,
       })
 
-      // El correo se envía automáticamente en el backend al departamento responsable
       setMensaje('Solicitud creada correctamente ✓ — El departamento fue notificado por correo')
 
       setForm({
@@ -169,6 +243,7 @@ function DashboardPatrullero() {
       idTiposCaso: [],
       imagenes: []
     })
+    setPreviewsEdicion([])
     setVistaActiva('editar')
   }
 
@@ -193,6 +268,7 @@ function DashboardPatrullero() {
 
       setMensaje('Solicitud actualizada correctamente ✓')
       setSolicitudEditando(null)
+      setPreviewsEdicion([])
       setVistaActiva('solicitudes')
       cargarDatos()
     } catch (e) {
@@ -329,16 +405,33 @@ function DashboardPatrullero() {
               )}
 
               <div className="form-group">
-                <label>Imágenes de evidencia (máx. 10)</label>
+                <label>
+                  Imágenes de evidencia ({form.imagenes.length}/10)
+                </label>
+                <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', marginTop: '-2px' }}>
+                  Puedes agregar las imágenes una por una o varias a la vez. Cada selección se suma a las anteriores.
+                </p>
                 <input
-                  type="file" accept="image/*" multiple
-                  onChange={handleImagenes} className="input-file"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImagenes}
+                  className="input-file"
+                  disabled={form.imagenes.length >= 10}
                 />
                 {previews.length > 0 && (
                   <div className="previews-grid">
                     {previews.map((url, i) => (
-                      <div key={i} className="preview-item">
+                      <div key={i} className="preview-item-con-quitar">
                         <img src={url} alt={`preview-${i}`} />
+                        <button
+                          type="button"
+                          className="btn-quitar-imagen"
+                          onClick={() => quitarImagen(i)}
+                          title="Quitar imagen"
+                        >
+                          ✕
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -453,13 +546,36 @@ function DashboardPatrullero() {
               </div>
 
               <div className="form-group">
-                <label>Agregar nuevas imágenes</label>
+                <label>
+                  Agregar nuevas imágenes ({formEdicion.imagenes.length}/10)
+                </label>
+                <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', marginTop: '-2px' }}>
+                  Puedes agregar las imágenes una por una. Cada selección se suma a las anteriores.
+                </p>
                 <input
-                  type="file" accept="image/*" multiple
-                  onChange={handleImagenesEdicion} className="input-file"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImagenesEdicion}
+                  className="input-file"
+                  disabled={formEdicion.imagenes.length >= 10}
                 />
-                {formEdicion.imagenes.length > 0 && (
-                  <p className="ubicacion-ok">✓ {formEdicion.imagenes.length} imagen(es) seleccionada(s)</p>
+                {previewsEdicion.length > 0 && (
+                  <div className="previews-grid">
+                    {previewsEdicion.map((url, i) => (
+                      <div key={i} className="preview-item-con-quitar">
+                        <img src={url} alt={`preview-edicion-${i}`} />
+                        <button
+                          type="button"
+                          className="btn-quitar-imagen"
+                          onClick={() => quitarImagenEdicion(i)}
+                          title="Quitar imagen"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 

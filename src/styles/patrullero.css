@@ -237,6 +237,13 @@
   border-color: #1a2b4a;
 }
 
+.input-file:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+  border-color: #d1d5db;
+}
+
 .previews-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -256,6 +263,61 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* ═══════════════════════════════════════════════════════════════════ */
+/*   PREVIEW DE IMAGEN CON BOTON DE QUITAR                              */
+/*   Permite eliminar imagenes individualmente antes de enviar          */
+/* ═══════════════════════════════════════════════════════════════════ */
+.preview-item-con-quitar {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+  transition: border-color 0.2s;
+}
+
+.preview-item-con-quitar:hover {
+  border-color: #dc2626;
+}
+
+.preview-item-con-quitar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.btn-quitar-imagen {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(220, 38, 38, 0.92);
+  color: white;
+  border: 2px solid white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  transition: background 0.2s, transform 0.15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.btn-quitar-imagen:hover {
+  background: rgba(185, 28, 28, 1);
+  transform: scale(1.1);
+}
+
+.btn-quitar-imagen:active {
+  transform: scale(0.95);
 }
 
 .patrullero-nav {
